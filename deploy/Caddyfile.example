@@ -1,0 +1,8 @@
+# OPLedger reverse proxy — Caddy with automatic HTTPS.
+# Replace books.example.com with your domain, point DNS at this host, then:
+#   caddy run --config deploy/Caddyfile.example
+# Caddy provisions and renews the Let's Encrypt certificate automatically.
+books.example.com {
+    encode zstd gzip
+    reverse_proxy localhost:8080
+}
