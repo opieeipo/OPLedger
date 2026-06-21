@@ -3,11 +3,14 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from backend.app.models.models import Role, TxnType
+
+QuarterlyMethod = Literal["set_aside", "se_income", "safe_harbor"]
+FilingStatus = Literal["single", "married_joint", "married_separate", "head_of_household"]
 
 
 # --- Setup / unlock -------------------------------------------------------
@@ -57,6 +60,12 @@ class UserCreate(BaseModel):
     role: Role
 
 
+class UserUpdate(BaseModel):
+    """Partial update: change a user's role and/or reset their password."""
+    role: Optional[Role] = None
+    password: Optional[str] = Field(default=None, min_length=8)
+
+
 class UserOut(BaseModel):
     id: int
     username: str
@@ -69,6 +78,13 @@ class UserOut(BaseModel):
 
 class AccountCreate(BaseModel):
     nickname: str = Field(min_length=1)
+    institution: Optional[str] = None
+    account_number: Optional[str] = None
+
+
+class AccountUpdate(BaseModel):
+    """Partial update; only supplied fields are changed."""
+    nickname: Optional[str] = Field(default=None, min_length=1)
     institution: Optional[str] = None
     account_number: Optional[str] = None
 
@@ -101,6 +117,7 @@ class TransactionOut(BaseModel):
     memo: Optional[str] = None
     txn_type: Optional[TxnType] = None
     schedule_c_category: Optional[str] = None
+    personal_category: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -108,6 +125,7 @@ class TransactionOut(BaseModel):
 class TagRequest(BaseModel):
     txn_type: TxnType
     schedule_c_category: Optional[str] = None
+    personal_category: Optional[str] = None
 
 
 # --- Reports --------------------------------------------------------------
@@ -145,6 +163,14 @@ class YearOverYear(BaseModel):
     years: list[YearSummary]
 
 
+class QuarterlyEstimate(BaseModel):
+    method: str
+    net_profit: float
+    annual: float
+    per_quarter: float
+    detail: dict[str, object]
+
+
 class RecurringSeries(BaseModel):
     payee: str
     amount: Decimal
@@ -152,3 +178,26 @@ class RecurringSeries(BaseModel):
     cadence: str
     average_gap_days: float
     last_seen: date
+
+
+# --- Ledger settings ------------------------------------------------------
+
+class LedgerSettings(BaseModel):
+    """Owner-configurable ledger settings (stored as key/value Setting rows)."""
+    name: Optional[str] = None   # company / ledger name (stored as "ledger_name")
+    ein: Optional[str] = None
+    fiscal_year_start: int = 1  # 1 = January (calendar year)
+    quarterly_method: QuarterlyMethod = "set_aside"
+    quarterly_set_aside_rate: float = 0.27   # fraction of net profit to set aside
+    quarterly_filing_status: FilingStatus = "single"
+    quarterly_prior_year_tax: float = 0.0
+
+
+class LedgerSettingsUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    ein: Optional[str] = None
+    fiscal_year_start: Optional[int] = Field(default=None, ge=1, le=12)
+    quarterly_method: Optional[QuarterlyMethod] = None
+    quarterly_set_aside_rate: Optional[float] = Field(default=None, ge=0, le=1)
+    quarterly_filing_status: Optional[FilingStatus] = None
+    quarterly_prior_year_tax: Optional[float] = Field(default=None, ge=0)

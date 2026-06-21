@@ -11,5 +11,8 @@ router = APIRouter(tags=["categories"])
 
 @router.get("/categories")
 def list_categories(_=Depends(get_current_user)) -> dict:
-    """Return the configured Schedule C categories."""
-    return {"categories": categories_service.load_categories()}
+    """Return the configured business (Schedule C) and personal categories."""
+    return {
+        "categories": categories_service.load_categories(),
+        "personal_categories": categories_service.load_personal_categories(),
+    }

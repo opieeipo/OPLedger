@@ -44,6 +44,24 @@ def database_exists() -> bool:
     return settings.db_path.exists()
 
 
+def _migrate(engine: Engine) -> None:
+    """Idempotent additive migrations for ledgers created before a column existed.
+
+    ``create_all`` adds new tables but never alters existing ones, and this app
+    ships no migration framework — so we add late-arriving columns by hand. Each
+    statement is guarded: a duplicate-column error just means it's already there.
+    """
+    additions = [
+        "ALTER TABLE transactions ADD COLUMN personal_category VARCHAR",
+    ]
+    for stmt in additions:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(stmt))
+        except Exception:
+            pass  # column already present (SQLite/Postgres raise on duplicate)
+
+
 def open_external() -> None:
     """Connect to the configured external database and ensure the schema."""
     global _engine, _SessionLocal
@@ -51,6 +69,7 @@ def open_external() -> None:
 
     engine = create_engine(settings.database_url, future=True)
     Base.metadata.create_all(engine)
+    _migrate(engine)
     _engine = engine
     _SessionLocal = sessionmaker(bind=engine, autoflush=False, future=True)
 
@@ -119,6 +138,7 @@ def open_database(passphrase: str, *, create: bool) -> bool:
     from backend.app import models  # noqa: F401
 
     Base.metadata.create_all(engine)
+    _migrate(engine)
 
     _engine = engine
     _SessionLocal = sessionmaker(bind=engine, autoflush=False, future=True)

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.app.api.deps import get_current_user, get_db, require_role
-from backend.app.models.models import Account, Role, Transaction
+from backend.app.models.models import Account, Role, Transaction, TxnType
 from backend.app.schemas import (
     ImportResult,
     RecurringSeries,
@@ -109,15 +109,28 @@ def tag_transaction(
     txn = db.get(Transaction, txn_id)
     if txn is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    if body.schedule_c_category and not categories_service.is_valid(body.schedule_c_category):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unknown Schedule C category",
-        )
+
     txn.txn_type = body.txn_type
-    txn.schedule_c_category = body.schedule_c_category
-    # Remember the choice so future imports from this payee tag themselves.
-    categorize.remember(db, txn.payee, body.txn_type, body.schedule_c_category)
+    if body.txn_type == TxnType.business:
+        if body.schedule_c_category and not categories_service.is_valid(body.schedule_c_category):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unknown Schedule C category",
+            )
+        txn.schedule_c_category = body.schedule_c_category
+        txn.personal_category = None
+        # Remember the choice so future imports from this payee tag themselves.
+        categorize.remember(db, txn.payee, body.txn_type, body.schedule_c_category)
+    else:  # personal
+        if body.personal_category and not categories_service.is_valid_personal(body.personal_category):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unknown personal category",
+            )
+        txn.personal_category = body.personal_category
+        txn.schedule_c_category = None
+        categorize.remember(db, txn.payee, body.txn_type, None)
+
     db.commit()
     db.refresh(txn)
     return txn

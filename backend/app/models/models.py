@@ -77,6 +77,7 @@ class Transaction(Base):
     memo = Column(String)
     txn_type = Column(Enum(TxnType))          # personal / business (null = untagged)
     schedule_c_category = Column(String)       # set when txn_type == business
+    personal_category = Column(String)         # set when txn_type == personal
 
     account = relationship("Account", back_populates="transactions")
 

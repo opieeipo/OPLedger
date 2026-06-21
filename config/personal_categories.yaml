@@ -1,0 +1,20 @@
+# Personal-spending categories (not tax categories).
+# Used to categorize transactions tagged "personal", the same way categories.yaml
+# drives business (Schedule C) categories. Copied into your data volume's config/
+# on first run; edit there to customize. Add or remove freely.
+personal_categories:
+  - Housing
+  - Groceries
+  - Dining
+  - Transportation
+  - Utilities
+  - Health
+  - Insurance
+  - Entertainment
+  - Shopping
+  - Travel
+  - Education
+  - Savings/Investment
+  - Gifts/Donations
+  - Income
+  - Other

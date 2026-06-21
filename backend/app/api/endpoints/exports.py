@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.api.deps import get_current_user, get_db
 from backend.app.models.models import Transaction, TxnType
-from backend.app.services import export, reports
+from backend.app.services import export, reports, settings_store
 
 router = APIRouter(tags=["export"])
 
@@ -56,8 +56,9 @@ def export_pdf(
     _=Depends(get_current_user),
 ) -> Response:
     summary = reports.schedule_c_summary(db, year)
+    cfg = settings_store.get_settings(db)
     return Response(
-        content=export.to_pdf(summary),
+        content=export.to_pdf(summary, name=cfg.name, ein=cfg.ein),
         media_type="application/pdf",
         headers=_attachment(f"opledger-schedule-c-{year}.pdf"),
     )

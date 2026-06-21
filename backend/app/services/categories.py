@@ -20,18 +20,40 @@ _DEFAULT = [
 ]
 
 
-def load_categories() -> list[str]:
-    """Return the configured Schedule C categories."""
-    path = settings.config_dir / "categories.yaml"
+# Personal-spending categories (not tax categories). Editable like the Schedule
+# C list; users extend these freely.
+_DEFAULT_PERSONAL = [
+    "Housing", "Groceries", "Dining", "Transportation", "Utilities", "Health",
+    "Insurance", "Entertainment", "Shopping", "Travel", "Education",
+    "Savings/Investment", "Gifts/Donations", "Income", "Other",
+]
+
+
+def _load_list(filename: str, key: str, default: list[str]) -> list[str]:
+    path = settings.config_dir / filename
     if not path.exists():
-        return list(_DEFAULT)
+        return list(default)
     try:
         data = yaml.safe_load(path.read_text()) or {}
     except yaml.YAMLError:
-        return list(_DEFAULT)
-    categories = data.get("categories")
-    return [str(c) for c in categories] if categories else list(_DEFAULT)
+        return list(default)
+    values = data.get(key)
+    return [str(c) for c in values] if values else list(default)
+
+
+def load_categories() -> list[str]:
+    """Return the configured Schedule C (business) categories."""
+    return _load_list("categories.yaml", "categories", _DEFAULT)
+
+
+def load_personal_categories() -> list[str]:
+    """Return the configured personal-spending categories."""
+    return _load_list("personal_categories.yaml", "personal_categories", _DEFAULT_PERSONAL)
 
 
 def is_valid(category: str) -> bool:
     return category in load_categories()
+
+
+def is_valid_personal(category: str) -> bool:
+    return category in load_personal_categories()

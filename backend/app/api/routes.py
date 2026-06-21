@@ -12,6 +12,7 @@ from backend.app.api.endpoints import (
     categories,
     exports,
     reports,
+    settings,
     setup,
     transactions,
     users,
@@ -34,3 +35,4 @@ api_router.include_router(categories.router)
 api_router.include_router(transactions.router)
 api_router.include_router(reports.router)
 api_router.include_router(exports.router)
+api_router.include_router(settings.router)
