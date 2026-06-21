@@ -7,9 +7,14 @@ from sqlalchemy.orm import Session
 
 from backend.app.api.deps import get_current_user, get_db, require_role
 from backend.app.models.models import Account, Role, Transaction
-from backend.app.schemas import ImportResult, TagRequest, TransactionOut
+from backend.app.schemas import (
+    ImportResult,
+    RecurringSeries,
+    TagRequest,
+    TransactionOut,
+)
 from backend.app.services import categories as categories_service
-from backend.app.services import categorize, qfx
+from backend.app.services import categorize, qfx, recurring
 
 router = APIRouter(tags=["transactions"])
 
@@ -79,6 +84,19 @@ def list_transactions(
     if account_id is not None:
         stmt = stmt.where(Transaction.account_id == account_id)
     return list(db.scalars(stmt))
+
+
+@router.get("/transactions/recurring", response_model=list[RecurringSeries])
+def recurring_series(
+    account_id: int | None = None,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+) -> list[dict]:
+    """Detect recurring transactions (subscriptions, regular bills)."""
+    stmt = select(Transaction)
+    if account_id is not None:
+        stmt = stmt.where(Transaction.account_id == account_id)
+    return recurring.detect(db.scalars(stmt).all())
 
 
 @router.post("/transactions/{txn_id}/tag", response_model=TransactionOut)

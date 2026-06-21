@@ -87,6 +87,14 @@
     "exportTxf": "Export TXF",
     "exportPdf": "Export PDF"
   },
+  "recurring": {
+    "heading": "Recurring transactions",
+    "none": "No recurring transactions detected yet.",
+    "payee": "Payee",
+    "amount": "Amount",
+    "cadence": "Cadence",
+    "occurrences": "Seen"
+  },
   "users": {
     "heading": "Users",
     "add": "Add user",

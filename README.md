@@ -261,7 +261,7 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 - [x] Auto-categorization by payee pattern
 - [x] Multi-account ledger view
 - [ ] Brew, Scoop, and Linux installer distribution
-- [ ] Recurring transaction detection
+- [x] Recurring transaction detection
 - [x] Year-over-year comparison report
 - [ ] PostgreSQL backend support
 - [ ] HTTPS / reverse proxy documentation

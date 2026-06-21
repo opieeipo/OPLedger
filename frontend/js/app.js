@@ -184,6 +184,7 @@ async function renderDashboard(me) {
   sections.push(renderAccounts(accounts, canWrite));
   if (canWrite) sections.push(renderImport(accounts));
   sections.push(await renderReports());
+  sections.push(await renderRecurring());
   sections.push(renderTransactions(transactions, canWrite, accounts));
   if (isOwner) sections.push(await renderUsers());
 
@@ -290,6 +291,26 @@ async function renderReports() {
       el("tbody", {}, ...r.by_category.map((c) =>
         el("tr", {}, el("td", {}, c.category), el("td", { class: "num" }, money(c.amount)))))));
   }
+  return section;
+}
+
+async function renderRecurring() {
+  const series = await api("/transactions/recurring").catch(() => []);
+  const section = el("section", { class: "card" }, el("h3", {}, t("recurring.heading")));
+  if (!series.length) {
+    section.append(el("p", { class: "muted" }, t("recurring.none")));
+    return section;
+  }
+  section.append(el("table", { class: "txns" },
+    el("thead", {}, el("tr", {},
+      el("th", {}, t("recurring.payee")), el("th", { class: "num" }, t("recurring.amount")),
+      el("th", {}, t("recurring.cadence")), el("th", { class: "num" }, t("recurring.occurrences")))),
+    el("tbody", {}, ...series.map((s) =>
+      el("tr", {},
+        el("td", {}, s.payee),
+        el("td", { class: "num" }, Number(s.amount).toFixed(2)),
+        el("td", {}, s.cadence),
+        el("td", { class: "num" }, s.occurrences))))));
   return section;
 }
 

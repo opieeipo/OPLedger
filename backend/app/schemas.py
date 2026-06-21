@@ -141,3 +141,12 @@ class YearSummary(BaseModel):
 
 class YearOverYear(BaseModel):
     years: list[YearSummary]
+
+
+class RecurringSeries(BaseModel):
+    payee: str
+    amount: Decimal
+    occurrences: int
+    cadence: str
+    average_gap_days: float
+    last_seen: date

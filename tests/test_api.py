@@ -210,6 +210,25 @@ def test_multi_account_ledger_filter(client):
     assert [t["fitid"] for t in only_card] == ["M2"]
 
 
+def test_recurring_detection(client):
+    auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
+    account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]
+    qfx = _qfx(
+        _stmttrn("N1", "-15.99", "NETFLIX", "20260115"),
+        _stmttrn("N2", "-15.99", "NETFLIX", "20260215"),
+        _stmttrn("N3", "-15.99", "NETFLIX", "20260315"),
+        _stmttrn("Z1", "-4.00", "ONE OFF", "20260101"),  # not recurring
+    )
+    client.post("/api/transactions/import", headers=auth,
+                files={"file": ("n.qfx", qfx, "x")}, data={"account_id": str(account_id)})
+
+    series = client.get("/api/transactions/recurring", headers=auth).json()
+    assert len(series) == 1
+    assert series[0]["payee"] == "NETFLIX"
+    assert series[0]["cadence"] == "monthly"
+    assert series[0]["occurrences"] == 3
+
+
 def test_exports_csv_txf_pdf(client):
     auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
     account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]
