@@ -2,7 +2,7 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
-sqlcipher3               # SQLCipher driver for AES-256 encryption at rest
+cryptography             # AES-256-GCM encryption at rest (cross-platform wheels)
 psycopg[binary]          # PostgreSQL driver (optional external-database backend)
 pydantic
 pydantic-settings

@@ -10,9 +10,9 @@ _icon = "assets/icon.icns" if os.path.exists("assets/icon.icns") else None
 
 hidden = []
 hidden += collect_submodules("uvicorn")          # uvicorn loads protocols/lifespan dynamically
-hidden += collect_submodules("backend")          # app is referenced by string "backend.main:app"
+hidden += collect_submodules("backend")          # full backend tree (imported app object)
 hidden += collect_submodules("ofxparse")
-hidden += ["sqlcipher3", "sqlcipher3.dbapi2"]    # encrypted-DB driver (native extension)
+hidden += collect_submodules("webview")          # pywebview + its OS webview backend
 
 datas = [("frontend", "frontend"), ("assets", "assets"), ("config", "config")]
 datas += collect_data_files("reportlab")          # PDF fonts/data

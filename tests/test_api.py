@@ -6,7 +6,7 @@ are not installed, so the pure-logic tests can still run in a bare environment.
 import pytest
 
 pytest.importorskip("fastapi")
-pytest.importorskip("sqlcipher3")
+pytest.importorskip("cryptography")
 pytest.importorskip("ofxparse")
 
 from fastapi.testclient import TestClient  # noqa: E402
