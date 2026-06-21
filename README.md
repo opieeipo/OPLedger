@@ -44,7 +44,7 @@ No aggregator tokens. No OAuth flows. No recurring sync connection to break at t
 - TXF export for tax software import
 - Full CSV export
 - PDF report generation
-- AES-256 encryption at rest via SQLCipher
+- AES-256-GCM encryption at rest (via the cryptography library; cross-platform)
 - Passphrase-derived encryption key, set on first run
 - JWT-based session auth with configurable timeout
 - Fully responsive -- works in any browser on any screen size
@@ -54,34 +54,28 @@ No aggregator tokens. No OAuth flows. No recurring sync connection to break at t
 
 ## Installation
 
-OPLedger runs as a Podman container. Podman is a daemonless, rootless, Docker-compatible container runtime with no licensing restrictions. The installer handles it automatically.
-
-OPLedger runs as a Podman container and opens in a chromeless **Google Chrome**
-window, so both Podman and Chrome are required. The installers declare/check
-Podman; install Chrome from <https://www.google.com/chrome/>.
+OPLedger installs as a **native desktop app** on macOS, Windows, and Linux — a
+single self-contained application that renders in the OS's own webview. No
+container, no separate browser, and no Python to install. The *same* app can
+also run as a **self-hosted web service** in a container for multi-user/server
+use (the original vision).
 
 ### macOS
 
 ```bash
-brew install opieeipo/opledger/opledger   # one command — auto-taps
-brew install --cask google-chrome         # if you don't already have Chrome
-opledger
+brew install --cask opieeipo/opledger/opledger
 ```
 
-Installs the launcher (and Podman as a dependency). The first `opledger` run
-pulls the container image and opens the app window; close the window to quit.
+Then launch OPLedger from your Applications folder.
 
 ### Windows
 
 ```powershell
-# one command — installs straight from the manifest:
-scoop install https://raw.githubusercontent.com/opieeipo/scoop-opledger/main/bucket/opledger.json
-opledger
+scoop bucket add opledger https://github.com/opieeipo/scoop-opledger
+scoop install opledger
 ```
 
-Or, to get `scoop update` version tracking, add the bucket first:
-`scoop bucket add opledger https://github.com/opieeipo/scoop-opledger` then
-`scoop install opledger`. Google Chrome is required.
+Then launch OPLedger from the Start menu.
 
 ### Linux
 
@@ -89,16 +83,17 @@ Or, to get `scoop update` version tracking, add the bucket first:
 curl -fsSL https://raw.githubusercontent.com/opieeipo/OPLedger/main/packaging/linux/install.sh | bash
 ```
 
-Installs the `opledger` launcher and registers a `.desktop` entry. Ensure Podman
-and Chrome (or Chromium) are installed.
+Installs the app and registers a `.desktop` entry in your application grid.
 
-### Manual (any platform with Podman installed)
+### Self-hosted web service (any platform with Podman or Docker)
+
+Run OPLedger as a server that others reach in a browser:
 
 ```bash
 podman-compose -f https://raw.githubusercontent.com/opieeipo/OPLedger/main/compose.yaml up -d
 ```
 
-Then open `http://localhost:8080` in your browser.
+Then open `http://localhost:8080`.
 
 ---
 
@@ -192,8 +187,8 @@ OPLedger exports in three formats:
 
 OPLedger is designed for users who take data seriously.
 
-- **AES-256 encryption at rest** via SQLCipher. The database is encrypted on disk. If the container volume is accessed directly, the data is unreadable without the passphrase.
-- **Passphrase-derived key** using PBKDF2. Your passphrase is never stored. The derived key unlocks the database at runtime and exists only in memory.
+- **AES-256-GCM encryption at rest** via the `cryptography` library. The whole database image is sealed (authenticated encryption) on disk; if the data file is accessed directly, it is unreadable — and undetectably-untamperable — without the passphrase. (Chosen over SQLCipher so the app bundles natively on macOS, Windows, and Linux from one codebase.)
+- **Passphrase-derived key** using scrypt (CPU/memory-hard KDF). Your passphrase is never stored. The derived key unlocks the database at runtime and exists only in memory; the decrypted image is held in memory and re-sealed to disk after each change.
 - **Bcrypt password hashing** for all user accounts.
 - **JWT session tokens** with configurable expiration. Default is 8 hours. Can be set to a longer window for local single-user installs or tightened for shared deployments.
 - **HTTPS-ready** -- place a reverse proxy (Caddy, Nginx) in front for TLS termination when exposing beyond localhost.
@@ -222,7 +217,7 @@ All configuration is plain text. No proprietary formats.
 OPLedger is a single Podman image containing:
 
 - **FastAPI** backend -- QFX parsing, ledger logic, REST API
-- **SQLite via SQLCipher** -- encrypted local persistence
+- **SQLite with AES-256-GCM at rest** (cryptography) -- encrypted local persistence
 - **Vanilla JS frontend** -- no framework dependency, fully responsive
 - **Podman** -- daemonless container runtime, no Docker Desktop required
 
@@ -290,11 +285,16 @@ pytest                       # full suite (encryption, auth, QFX import)
 uvicorn backend.main:app --reload --port 8080
 ```
 
-The `sqlcipher3` driver compiles against SQLCipher at install time. On macOS,
-`brew install sqlcipher` first; on Debian/Ubuntu, `apt-get install
-libsqlcipher-dev libssl-dev build-essential`. Pure-logic tests (e.g. dedup) run
-without the native dependency; integration tests skip automatically if it's
-absent.
+All dependencies are pure-Python or ship prebuilt wheels (encryption is
+AES-256-GCM via the `cryptography` library), so there's no native toolchain to
+install — `pip install` works the same on macOS, Linux, and Windows.
+
+To build the native desktop app (`dist/OPLedger.app` / `dist/opledger/`):
+
+```bash
+pip install -r requirements-desktop.txt
+pyinstaller --noconfirm opledger.spec
+```
 
 ---
 

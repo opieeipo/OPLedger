@@ -1,35 +1,32 @@
 name: Release
 
-# On a version tag (v*), build the container image, push it to GHCR, and create
-# a GitHub Release. The Homebrew formula and Scoop manifest reference the source
-# tarball/zip GitHub generates automatically for the tag (see packaging/README.md
-# for updating their version + checksum).
+# On a version tag (v*):
+#   - build + push the container image (self-hosted web service)
+#   - build the native desktop app on macOS / Windows / Linux (PyInstaller)
+#   - publish a GitHub Release with all native artifacts attached
+#
+# macOS signing/notarization is graceful: it runs only when the Apple secrets are
+# present (same names as the Stash project), otherwise it ships unsigned.
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   image:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write   # create the release
-      packages: write   # push to GHCR
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push image
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Containerfile
@@ -38,7 +35,93 @@ jobs:
             ghcr.io/opieeipo/opledger:latest
             ghcr.io/opieeipo/opledger:${{ github.ref_name }}
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            asset: OPLedger-${{ github.ref_name }}-macOS-arm64.zip
+          - os: windows-latest
+            asset: OPLedger-${{ github.ref_name }}-windows-x64.zip
+          - os: ubuntu-latest
+            asset: OPLedger-${{ github.ref_name }}-linux-x86_64.tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Linux webview system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1 \
+            libgirepository1.0-dev libcairo2-dev pkg-config python3-dev
+
+      - name: Install build dependencies
+        run: pip install -r requirements-desktop.txt
+
+      - name: Build (PyInstaller)
+        run: pyinstaller --noconfirm opledger.spec
+
+      - name: macOS sign + notarize (skipped when secrets absent)
+        if: runner.os == 'macOS'
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          if [ -z "$MACOS_CERT_P12" ]; then
+            echo "No signing certificate configured — shipping unsigned .app"
+            exit 0
+          fi
+          echo "$MACOS_CERT_P12" | base64 -d > cert.p12
+          security create-keychain -p ci-pass build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p ci-pass build.keychain
+          security import cert.p12 -k build.keychain -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci-pass build.keychain
+          rm cert.p12
+          codesign --deep --force --options runtime \
+            --sign "$MACOS_SIGN_IDENTITY" dist/OPLedger.app
+          ditto -c -k --keepParent dist/OPLedger.app notarize.zip
+          xcrun notarytool submit notarize.zip \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple dist/OPLedger.app
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: ditto -c -k --keepParent dist/OPLedger.app "${{ matrix.asset }}"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path dist/opledger/* -DestinationPath "${{ matrix.asset }}"
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: tar -czf "${{ matrix.asset }}" -C dist opledger
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    needs: [image, native]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          files: assets/*
