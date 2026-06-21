@@ -1,0 +1,9 @@
+# Auto-tagging rules by payee name pattern.
+# OPLedger appends to this as it learns from your tagging; you can also edit by
+# hand. The first matching pattern wins.
+#
+# rules:
+#   - pattern: "ADOBE*"        # glob against the normalized payee name
+#     type: business           # business | personal
+#     category: Office expenses # required when type is business
+rules: []

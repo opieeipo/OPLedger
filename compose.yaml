@@ -1,0 +1,28 @@
+# OPLedger deployment — single source of truth.
+# Translates to a Kubernetes manifest, Fly.io, or Render service with minimal change.
+#
+#   podman-compose -f compose.yaml up -d
+#   open http://localhost:8080
+services:
+  opledger:
+    image: ghcr.io/opledger/opledger:latest
+    # For local development, build from source instead of pulling the image:
+    # build:
+    #   context: .
+    #   dockerfile: Containerfile
+    container_name: opledger
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persistent, encrypted data volume. Holds the SQLCipher DB and the
+      # first-run config/ tree (categories, payee rules, accounts, settings).
+      - opledger-data:/data
+    environment:
+      # Where the encrypted database and config/ live inside the container.
+      OPLEDGER_DATA_DIR: /data
+      # JWT session lifetime in seconds (default 8 hours). See config/settings.yaml.
+      OPLEDGER_SESSION_TIMEOUT: "28800"
+    restart: unless-stopped
+
+volumes:
+  opledger-data:

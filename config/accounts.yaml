@@ -1,0 +1,9 @@
+# Account nicknames and metadata.
+# Populated as you add accounts in the app; editable here too.
+#
+# accounts:
+#   - nickname: "Business Checking"
+#     institution: "Chase"
+#   - nickname: "Business Card"
+#     institution: "American Express"
+accounts: []

@@ -1,0 +1,19 @@
+# Application settings.
+# Session timeout, locale, fiscal year start, and the database connection.
+
+# JWT session lifetime in seconds. Default 8 hours. Lengthen for single-user
+# local installs, tighten for shared deployments.
+session_timeout: 28800
+
+# UI locale (source language is English). Add locale files under
+# frontend/locales/ to offer more.
+locale: en
+
+# First month of your fiscal year (1 = January).
+fiscal_year_start: 1
+
+# SQLAlchemy connection string. Default is the encrypted local SQLCipher DB.
+# To run against PostgreSQL instead, point this at your instance — no
+# application code changes required:
+#   database_url: "postgresql+psycopg://user:pass@host:5432/opledger"
+database_url: "sqlite+pysqlcipher://:@/data/opledger.db"

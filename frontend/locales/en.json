@@ -1,0 +1,9 @@
+{
+  "app": {
+    "title": "OPLedger",
+    "tagline": "Clean books, locally.",
+    "loading": "Loading…",
+    "ready": "Ready.",
+    "setupNeeded": "Welcome — let's set up your ledger."
+  }
+}

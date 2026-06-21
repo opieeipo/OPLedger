@@ -1,0 +1,20 @@
+# Schedule C category definitions.
+# Copied into your data volume's config/ on first run; edit there to customize.
+# Maps to standard IRS Schedule C line items. Add custom categories freely.
+categories:
+  - Advertising
+  - Car and truck expenses
+  - Commissions and fees
+  - Contract labor
+  - Depreciation
+  - Insurance
+  - Legal and professional services
+  - Office expenses
+  - Rent or lease (equipment)
+  - Repairs and maintenance
+  - Supplies
+  - Taxes and licenses
+  - Travel
+  - Utilities
+  - Wages
+  - Other expenses   # uses the transaction memo field

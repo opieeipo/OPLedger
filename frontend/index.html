@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OPLedger</title>
+    <link rel="icon" href="/assets/icon.jpeg" />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <!-- All user-facing text is keyed via data-i18n and resolved at runtime
+         from /locales/<lang>.json (see js/i18n.js). No hardcoded copy. -->
+    <header class="topbar">
+      <h1 data-i18n="app.title">OPLedger</h1>
+      <p class="tagline" data-i18n="app.tagline">Clean books, locally.</p>
+    </header>
+
+    <main id="app">
+      <p data-i18n="app.loading">Loading…</p>
+    </main>
+
+    <script src="/js/i18n.js" type="module"></script>
+    <script src="/js/app.js" type="module"></script>
+  </body>
+</html>

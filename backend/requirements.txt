@@ -1,0 +1,13 @@
+# OPLedger backend dependencies.
+fastapi
+uvicorn[standard]
+sqlalchemy
+sqlcipher3-binary        # SQLCipher driver for AES-256 encryption at rest
+pydantic
+pydantic-settings
+python-jose[cryptography]  # JWT session tokens
+passlib[bcrypt]            # Bcrypt password hashing
+ofxparse                   # QFX/OFX parsing
+pyyaml                     # config/*.yaml
+reportlab                  # PDF report generation
+python-multipart           # file uploads (QFX import)
