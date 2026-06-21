@@ -6,13 +6,18 @@ mounted volume.
 """
 import os
 import shutil
+import sys
 from pathlib import Path
 
 import yaml
 from pydantic_settings import BaseSettings
 
 # Bundled default config templates, copied into the data volume on first run.
-_BUNDLED_CONFIG = Path(__file__).resolve().parent.parent.parent.parent / "config"
+# Under a PyInstaller native build they live in the extraction dir (_MEIPASS).
+if getattr(sys, "frozen", False):
+    _BUNDLED_CONFIG = Path(sys._MEIPASS) / "config"
+else:
+    _BUNDLED_CONFIG = Path(__file__).resolve().parent.parent.parent.parent / "config"
 
 
 class Settings(BaseSettings):

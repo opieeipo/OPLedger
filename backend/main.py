@@ -18,7 +18,14 @@ from backend.app.db import database
 
 logger = logging.getLogger("opledger")
 
-ROOT = Path(__file__).resolve().parent.parent
+# When frozen by PyInstaller (native desktop build), bundled data files live under
+# the extraction dir (sys._MEIPASS); otherwise they sit at the repo root.
+import sys
+
+if getattr(sys, "frozen", False):
+    ROOT = Path(sys._MEIPASS)
+else:
+    ROOT = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = ROOT / "frontend"
 ASSETS_DIR = ROOT / "assets"
 
