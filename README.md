@@ -253,12 +253,12 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 - [x] First-run setup wizard
 - [x] Multi-user auth with role-based access
 - [x] AES-256 encryption at rest
-- [ ] Business/personal tagging with memory
+- [x] Business/personal tagging with memory
 - [ ] Schedule C category mapping
 - [ ] P&L report
 - [ ] TXF export
 - [ ] CSV and PDF export
-- [ ] Auto-categorization by payee pattern
+- [x] Auto-categorization by payee pattern
 - [ ] Multi-account ledger view
 - [ ] Brew, Scoop, and Linux installer distribution
 - [ ] Recurring transaction detection

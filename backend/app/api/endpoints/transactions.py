@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from backend.app.api.deps import get_current_user, get_db, require_role
 from backend.app.models.models import Account, Role, Transaction
 from backend.app.schemas import ImportResult, TagRequest, TransactionOut
-from backend.app.services import qfx
+from backend.app.services import categorize, qfx
 
 router = APIRouter(tags=["transactions"])
 
@@ -44,7 +44,7 @@ def import_qfx(
     )
     new_txns, duplicates = qfx.deduplicate(parsed, existing)
 
-    db.add_all(
+    rows = [
         Transaction(
             account_id=account_id,
             fitid=t.fitid,
@@ -54,11 +54,17 @@ def import_qfx(
             memo=t.memo,
         )
         for t in new_txns
-    )
+    ]
+    # Auto-tag from learned payee rules before persisting.
+    auto_tagged = categorize.apply_rules(db, rows)
+    db.add_all(rows)
     db.commit()
 
     return ImportResult(
-        parsed=len(parsed), imported=len(new_txns), duplicates=duplicates
+        parsed=len(parsed),
+        imported=len(rows),
+        duplicates=duplicates,
+        auto_tagged=auto_tagged,
     )
 
 
@@ -86,6 +92,8 @@ def tag_transaction(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     txn.txn_type = body.txn_type
     txn.schedule_c_category = body.schedule_c_category
+    # Remember the choice so future imports from this payee tag themselves.
+    categorize.remember(db, txn.payee, body.txn_type, body.schedule_c_category)
     db.commit()
     db.refresh(txn)
     return txn

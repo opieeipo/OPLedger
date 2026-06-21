@@ -17,17 +17,28 @@ from backend.app.db import database  # noqa: E402
 from backend.main import app  # noqa: E402
 
 
-SAMPLE_QFX = """OFXHEADER:100
-DATA:OFXSGML
-VERSION:102
+def _qfx(*txns: str) -> str:
+    body = "\n".join(txns)
+    return (
+        "OFXHEADER:100\nDATA:OFXSGML\nVERSION:102\n\n"
+        "<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS>"
+        "<CURDEF>USD<BANKACCTFROM><BANKID>123<ACCTID>999<ACCTTYPE>CHECKING</BANKACCTFROM>"
+        f"<BANKTRANLIST>{body}</BANKTRANLIST>"
+        "</STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>\n"
+    )
 
-<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS>
-<CURDEF>USD<BANKACCTFROM><BANKID>123<ACCTID>999<ACCTTYPE>CHECKING</BANKACCTFROM>
-<BANKTRANLIST>
-<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260115<TRNAMT>-12.50<FITID>T1<NAME>COFFEE</STMTTRN>
-<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260116<TRNAMT>-30.00<FITID>T2<NAME>FUEL</STMTTRN>
-</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>
-"""
+
+def _stmttrn(fitid: str, amount: str, name: str, dtposted: str = "20260115") -> str:
+    return (
+        f"<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>{dtposted}<TRNAMT>{amount}"
+        f"<FITID>{fitid}<NAME>{name}</STMTTRN>"
+    )
+
+
+SAMPLE_QFX = _qfx(
+    _stmttrn("T1", "-12.50", "COFFEE", "20260115"),
+    _stmttrn("T2", "-30.00", "FUEL", "20260116"),
+)
 
 
 @pytest.fixture()
@@ -114,11 +125,34 @@ def test_qfx_import_dedupes_on_reimport(client):
     r1 = client.post("/api/transactions/import", headers=auth,
                      files={"file": ("stmt.qfx", SAMPLE_QFX, "application/x-ofx")}, data=data)
     assert r1.status_code == 201
-    assert r1.json() == {"parsed": 2, "imported": 2, "duplicates": 0}
+    assert r1.json() == {"parsed": 2, "imported": 2, "duplicates": 0, "auto_tagged": 0}
 
     # Re-importing the overlapping window imports nothing new.
     r2 = client.post("/api/transactions/import", headers=auth,
                      files={"file": ("stmt.qfx", SAMPLE_QFX, "application/x-ofx")}, data=data)
-    assert r2.json() == {"parsed": 2, "imported": 0, "duplicates": 2}
+    assert r2.json() == {"parsed": 2, "imported": 0, "duplicates": 2, "auto_tagged": 0}
 
     assert len(client.get("/api/transactions", headers=auth).json()) == 2
+
+
+def test_tagging_is_remembered_and_applied_on_next_import(client):
+    auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
+    account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]
+
+    # Import a transaction from STARBUCKS and tag it business/Office expenses.
+    client.post("/api/transactions/import", headers=auth,
+                files={"file": ("a.qfx", _qfx(_stmttrn("S1", "-5.00", "STARBUCKS")), "x")},
+                data={"account_id": str(account_id)})
+    txn = client.get("/api/transactions", headers=auth).json()[0]
+    client.post(f"/api/transactions/{txn['id']}/tag", headers=auth,
+                json={"txn_type": "business", "schedule_c_category": "Office expenses"})
+
+    # A new transaction from the same payee imports pre-tagged.
+    r = client.post("/api/transactions/import", headers=auth,
+                    files={"file": ("b.qfx", _qfx(_stmttrn("S2", "-6.00", "STARBUCKS")), "x")},
+                    data={"account_id": str(account_id)})
+    assert r.json()["auto_tagged"] == 1
+
+    s2 = [t for t in client.get("/api/transactions", headers=auth).json() if t["fitid"] == "S2"][0]
+    assert s2["txn_type"] == "business"
+    assert s2["schedule_c_category"] == "Office expenses"

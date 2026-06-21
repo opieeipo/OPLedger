@@ -86,6 +86,7 @@ class ImportResult(BaseModel):
     parsed: int       # transactions read from the file
     imported: int     # new transactions written
     duplicates: int   # skipped because the FITID already existed
+    auto_tagged: int = 0  # imported rows auto-tagged from learned payee rules
 
 
 class TransactionOut(BaseModel):
