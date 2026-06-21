@@ -73,6 +73,15 @@
     "untagged": "Untagged",
     "selectCategory": "Select category…"
   },
+  "reports": {
+    "heading": "Schedule C summary",
+    "grossReceipts": "Gross receipts",
+    "totalExpenses": "Total expenses",
+    "netProfit": "Net profit",
+    "category": "Category",
+    "amount": "Amount",
+    "none": "No business transactions tagged yet."
+  },
   "users": {
     "heading": "Users",
     "add": "Add user",

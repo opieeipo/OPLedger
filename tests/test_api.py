@@ -156,6 +156,42 @@ def test_schedule_c_categories_listed_and_validated(client):
     assert bad.status_code == 400
 
 
+def test_reports_pnl_schedule_c_and_yoy(client):
+    auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
+    account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]
+
+    qfx = _qfx(
+        _stmttrn("R1", "1000.00", "CLIENT PAYMENT", "20260201"),  # income
+        _stmttrn("R2", "-200.00", "OFFICE DEPOT", "20260205"),    # expense
+        _stmttrn("R3", "-50.00", "DELTA AIR", "20260210"),        # expense
+    )
+    client.post("/api/transactions/import", headers=auth,
+                files={"file": ("r.qfx", qfx, "x")}, data={"account_id": str(account_id)})
+
+    txns = {t["fitid"]: t for t in client.get("/api/transactions", headers=auth).json()}
+    client.post(f"/api/transactions/{txns['R1']['id']}/tag", headers=auth,
+                json={"txn_type": "business"})
+    client.post(f"/api/transactions/{txns['R2']['id']}/tag", headers=auth,
+                json={"txn_type": "business", "schedule_c_category": "Office expenses"})
+    client.post(f"/api/transactions/{txns['R3']['id']}/tag", headers=auth,
+                json={"txn_type": "business", "schedule_c_category": "Travel"})
+
+    pnl = client.get("/api/reports/pnl", headers=auth,
+                     params={"start": "2026-01-01", "end": "2026-12-31"}).json()
+    assert float(pnl["income"]) == 1000 and float(pnl["expenses"]) == 250
+    assert float(pnl["net"]) == 750
+    cats = {c["category"]: float(c["amount"]) for c in pnl["by_category"]}
+    assert cats == {"Office expenses": 200, "Travel": 50}
+
+    sc = client.get("/api/reports/schedule-c", headers=auth, params={"year": 2026}).json()
+    assert float(sc["gross_receipts"]) == 1000 and float(sc["net_profit"]) == 750
+
+    yoy = client.get("/api/reports/year-over-year", headers=auth,
+                     params={"start_year": 2025, "end_year": 2026}).json()
+    by_year = {y["year"]: float(y["net"]) for y in yoy["years"]}
+    assert by_year == {2025: 0, 2026: 750}
+
+
 def test_tagging_is_remembered_and_applied_on_next_import(client):
     auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
     account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]

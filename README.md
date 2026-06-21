@@ -255,14 +255,14 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 - [x] AES-256 encryption at rest
 - [x] Business/personal tagging with memory
 - [x] Schedule C category mapping
-- [ ] P&L report
+- [x] P&L report
 - [ ] TXF export
 - [ ] CSV and PDF export
 - [x] Auto-categorization by payee pattern
 - [ ] Multi-account ledger view
 - [ ] Brew, Scoop, and Linux installer distribution
 - [ ] Recurring transaction detection
-- [ ] Year-over-year comparison report
+- [x] Year-over-year comparison report
 - [ ] PostgreSQL backend support
 - [ ] HTTPS / reverse proxy documentation
 

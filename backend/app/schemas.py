@@ -106,3 +106,38 @@ class TransactionOut(BaseModel):
 class TagRequest(BaseModel):
     txn_type: TxnType
     schedule_c_category: Optional[str] = None
+
+
+# --- Reports --------------------------------------------------------------
+
+class CategoryAmount(BaseModel):
+    category: str
+    amount: Decimal
+
+
+class PnLReport(BaseModel):
+    start: Optional[date] = None
+    end: Optional[date] = None
+    income: Decimal
+    expenses: Decimal
+    net: Decimal
+    by_category: list[CategoryAmount]
+
+
+class ScheduleCSummary(BaseModel):
+    year: int
+    gross_receipts: Decimal
+    total_expenses: Decimal
+    net_profit: Decimal
+    by_category: list[CategoryAmount]
+
+
+class YearSummary(BaseModel):
+    year: int
+    income: Decimal
+    expenses: Decimal
+    net: Decimal
+
+
+class YearOverYear(BaseModel):
+    years: list[YearSummary]

@@ -183,6 +183,7 @@ async function renderDashboard(me) {
   const sections = [header];
   sections.push(renderAccounts(accounts, canWrite));
   if (canWrite) sections.push(renderImport(accounts));
+  sections.push(await renderReports());
   sections.push(renderTransactions(transactions, canWrite));
   if (isOwner) sections.push(await renderUsers());
 
@@ -245,6 +246,30 @@ function renderImport(accounts) {
     } catch (err) { showError(section, err.data?.detail || t("errors.generic")); }
   });
   section.append(form);
+  return section;
+}
+
+async function renderReports() {
+  const year = new Date().getFullYear();
+  const r = await api(`/reports/schedule-c?year=${year}`).catch(() => null);
+  const section = el("section", { class: "card" },
+    el("h3", {}, `${t("reports.heading")} — ${year}`));
+  if (!r || (!Number(r.gross_receipts) && !Number(r.total_expenses))) {
+    section.append(el("p", { class: "muted" }, t("reports.none")));
+    return section;
+  }
+  const money = (v) => Number(v).toFixed(2);
+  section.append(el("ul", { class: "list" },
+    el("li", {}, `${t("reports.grossReceipts")}: ${money(r.gross_receipts)}`),
+    el("li", {}, `${t("reports.totalExpenses")}: ${money(r.total_expenses)}`),
+    el("li", {}, `${t("reports.netProfit")}: ${money(r.net_profit)}`)));
+  if (r.by_category.length) {
+    section.append(el("table", { class: "txns" },
+      el("thead", {}, el("tr", {},
+        el("th", {}, t("reports.category")), el("th", { class: "num" }, t("reports.amount")))),
+      el("tbody", {}, ...r.by_category.map((c) =>
+        el("tr", {}, el("td", {}, c.category), el("td", { class: "num" }, money(c.amount)))))));
+  }
   return section;
 }
 
