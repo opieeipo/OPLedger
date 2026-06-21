@@ -63,9 +63,8 @@ Podman; install Chrome from <https://www.google.com/chrome/>.
 ### macOS
 
 ```bash
-brew tap opieeipo/opledger
-brew install opledger
-brew install --cask google-chrome   # if you don't already have Chrome
+brew install opieeipo/opledger/opledger   # one command — auto-taps
+brew install --cask google-chrome         # if you don't already have Chrome
 opledger
 ```
 
@@ -75,13 +74,14 @@ pulls the container image and opens the app window; close the window to quit.
 ### Windows
 
 ```powershell
-scoop bucket add opledger https://github.com/opieeipo/scoop-opledger
-scoop install opledger
+# one command — installs straight from the manifest:
+scoop install https://raw.githubusercontent.com/opieeipo/scoop-opledger/main/opledger.json
 opledger
 ```
 
-Installs the launcher and Podman. Run `opledger` (or pin it to Start) to launch;
-Google Chrome is required.
+Or, to get `scoop update` version tracking, add the bucket first:
+`scoop bucket add opledger https://github.com/opieeipo/scoop-opledger` then
+`scoop install opledger`. Google Chrome is required.
 
 ### Linux
 
