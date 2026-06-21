@@ -54,6 +54,10 @@ config/*.local.yaml
 .Trashes
 Thumbs.db
 
+# --- Test / tooling caches ---
+.pytest_cache/
+.ruff_cache/
+
 # --- Editor ---
 .idea/
 .vscode/

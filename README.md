@@ -249,10 +249,10 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 
 ## Roadmap
 
-- [ ] QFX import and deduplication
-- [ ] First-run setup wizard
-- [ ] Multi-user auth with role-based access
-- [ ] AES-256 encryption at rest
+- [x] QFX import and deduplication
+- [x] First-run setup wizard
+- [x] Multi-user auth with role-based access
+- [x] AES-256 encryption at rest
 - [ ] Business/personal tagging with memory
 - [ ] Schedule C category mapping
 - [ ] P&L report
@@ -265,6 +265,26 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 - [ ] Year-over-year comparison report
 - [ ] PostgreSQL backend support
 - [ ] HTTPS / reverse proxy documentation
+
+---
+
+## Development
+
+Run the backend and test suite locally (Python 3.12):
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt pytest httpx
+pytest                       # full suite (encryption, auth, QFX import)
+uvicorn backend.main:app --reload --port 8080
+```
+
+The `sqlcipher3` driver compiles against SQLCipher at install time. On macOS,
+`brew install sqlcipher` first; on Debian/Ubuntu, `apt-get install
+libsqlcipher-dev libssl-dev build-essential`. Pure-logic tests (e.g. dedup) run
+without the native dependency; integration tests skip automatically if it's
+absent.
 
 ---
 

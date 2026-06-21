@@ -17,8 +17,12 @@ _BUNDLED_CONFIG = Path(__file__).resolve().parent.parent.parent.parent / "config
 class Settings(BaseSettings):
     data_dir: Path = Path(os.environ.get("OPLEDGER_DATA_DIR", "./data"))
     session_timeout: int = int(os.environ.get("OPLEDGER_SESSION_TIMEOUT", "28800"))
-    # JWT signing secret. Generated and persisted on first run if unset.
-    jwt_secret: str = os.environ.get("OPLEDGER_JWT_SECRET", "")
+
+    # Optional: supplying the passphrase via the environment auto-unlocks the
+    # database at startup (convenient for unattended container restarts). When
+    # unset, the database must be unlocked through the web UI on each boot, and
+    # the passphrase never touches disk. Leave unset for the stricter posture.
+    passphrase: str | None = os.environ.get("OPLEDGER_PASSPHRASE") or None
 
     @property
     def config_dir(self) -> Path:

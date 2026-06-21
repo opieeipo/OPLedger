@@ -2,8 +2,90 @@
   "app": {
     "title": "OPLedger",
     "tagline": "Clean books, locally.",
-    "loading": "Loading…",
-    "ready": "Ready.",
-    "setupNeeded": "Welcome — let's set up your ledger."
+    "loading": "Loading…"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
+    "delete": "Delete",
+    "logout": "Log out",
+    "optional": "optional"
+  },
+  "setup": {
+    "heading": "Welcome to OPLedger",
+    "intro": "Let's set up your ledger. This runs once.",
+    "ownerUsername": "Owner username",
+    "ownerPassword": "Owner password",
+    "passphrase": "Encryption passphrase",
+    "passphraseHelp": "Used to derive your database encryption key. It is never stored — keep it somewhere safe. If you lose it, your data cannot be recovered.",
+    "ledgerName": "Ledger name",
+    "ledgerNamePlaceholder": "e.g. Acme LLC",
+    "firstAccount": "First account",
+    "accountNickname": "Account nickname",
+    "accountInstitution": "Institution",
+    "submit": "Create ledger",
+    "passwordHint": "At least 8 characters."
+  },
+  "unlock": {
+    "heading": "Unlock your ledger",
+    "intro": "Enter your encryption passphrase to decrypt the database.",
+    "passphrase": "Passphrase",
+    "submit": "Unlock"
+  },
+  "login": {
+    "heading": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in"
+  },
+  "nav": {
+    "transactions": "Transactions",
+    "accounts": "Accounts",
+    "users": "Users"
+  },
+  "accounts": {
+    "heading": "Accounts",
+    "none": "No accounts yet. Add one to start importing.",
+    "add": "Add account",
+    "nickname": "Nickname",
+    "institution": "Institution",
+    "accountNumber": "Account number"
+  },
+  "import": {
+    "heading": "Import QFX",
+    "account": "Account",
+    "file": "QFX file",
+    "submit": "Import",
+    "needAccount": "Create an account first to import transactions.",
+    "result": "Imported {imported} new, skipped {duplicates} duplicate(s) of {parsed} parsed."
+  },
+  "transactions": {
+    "heading": "Transactions",
+    "none": "No transactions yet.",
+    "date": "Date",
+    "payee": "Payee",
+    "amount": "Amount",
+    "type": "Type",
+    "category": "Schedule C category",
+    "personal": "Personal",
+    "business": "Business",
+    "untagged": "Untagged",
+    "selectCategory": "Select category…"
+  },
+  "users": {
+    "heading": "Users",
+    "add": "Add user",
+    "username": "Username",
+    "password": "Password",
+    "role": "Role",
+    "roleOwner": "Owner",
+    "roleBookkeeper": "Bookkeeper",
+    "roleViewer": "Viewer"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "badPassphrase": "Incorrect passphrase.",
+    "badLogin": "Incorrect username or password."
   }
 }

@@ -2,9 +2,11 @@
 # Build with Podman (or Docker): podman build -t opledger:latest .
 FROM python:3.12-slim
 
-# SQLCipher runtime for AES-256 encryption at rest.
+# Build tooling + SQLCipher/OpenSSL headers so the sqlcipher3 driver (AES-256
+# encryption at rest) compiles during pip install.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libsqlcipher0 \
+    && apt-get install -y --no-install-recommends \
+        build-essential libsqlcipher-dev libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -17,6 +19,7 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 COPY backend ./backend
 COPY frontend ./frontend
 COPY config ./config
+COPY assets ./assets
 
 # Encrypted data volume (DB + first-run config tree).
 ENV OPLEDGER_DATA_DIR=/data
