@@ -6,7 +6,14 @@ behind the unlock gate and JWT auth via per-router dependencies.
 """
 from fastapi import APIRouter
 
-from backend.app.api.endpoints import accounts, auth, setup, transactions, users
+from backend.app.api.endpoints import (
+    accounts,
+    auth,
+    categories,
+    setup,
+    transactions,
+    users,
+)
 
 api_router = APIRouter()
 
@@ -21,4 +28,5 @@ api_router.include_router(setup.router)
 api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(accounts.router)
+api_router.include_router(categories.router)
 api_router.include_router(transactions.router)

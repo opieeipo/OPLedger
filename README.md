@@ -254,7 +254,7 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 - [x] Multi-user auth with role-based access
 - [x] AES-256 encryption at rest
 - [x] Business/personal tagging with memory
-- [ ] Schedule C category mapping
+- [x] Schedule C category mapping
 - [ ] P&L report
 - [ ] TXF export
 - [ ] CSV and PDF export

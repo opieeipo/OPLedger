@@ -11,8 +11,9 @@ import { initI18n, t } from "./i18n.js";
 const API = "/api";
 const TOKEN_KEY = "opledger.token";
 
-// Standard IRS Schedule C line items (mirrors config/categories.yaml).
-const SCHEDULE_C = [
+// Schedule C line items. Loaded from /api/categories (config-driven) at
+// dashboard render; this is the fallback if that request fails.
+let SCHEDULE_C = [
   "Advertising", "Car and truck expenses", "Commissions and fees",
   "Contract labor", "Depreciation", "Insurance",
   "Legal and professional services", "Office expenses",
@@ -164,11 +165,15 @@ async function renderDashboard(me) {
   const canWrite = me.role === "owner" || me.role === "bookkeeper";
   const isOwner = me.role === "owner";
 
-  const [ledger, accounts, transactions] = await Promise.all([
+  const [ledger, accounts, transactions, cats] = await Promise.all([
     api("/ledger").catch(() => ({ name: t("app.title") })),
     api("/accounts").catch(() => []),
     api("/transactions").catch(() => []),
+    api("/categories").catch(() => null),
   ]);
+  if (cats && Array.isArray(cats.categories) && cats.categories.length) {
+    SCHEDULE_C = cats.categories;
+  }
 
   const header = el("div", { class: "dash-head" },
     el("div", {}, el("h2", {}, ledger.name), el("p", { class: "muted small" }, `${me.username} · ${me.role}`)),

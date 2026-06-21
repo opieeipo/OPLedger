@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from backend.app.api.deps import get_current_user, get_db, require_role
 from backend.app.models.models import Account, Role, Transaction
 from backend.app.schemas import ImportResult, TagRequest, TransactionOut
+from backend.app.services import categories as categories_service
 from backend.app.services import categorize, qfx
 
 router = APIRouter(tags=["transactions"])
@@ -90,6 +91,11 @@ def tag_transaction(
     txn = db.get(Transaction, txn_id)
     if txn is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    if body.schedule_c_category and not categories_service.is_valid(body.schedule_c_category):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unknown Schedule C category",
+        )
     txn.txn_type = body.txn_type
     txn.schedule_c_category = body.schedule_c_category
     # Remember the choice so future imports from this payee tag themselves.

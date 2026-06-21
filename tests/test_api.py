@@ -135,6 +135,27 @@ def test_qfx_import_dedupes_on_reimport(client):
     assert len(client.get("/api/transactions", headers=auth).json()) == 2
 
 
+def test_schedule_c_categories_listed_and_validated(client):
+    auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
+    account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]
+
+    cats = client.get("/api/categories", headers=auth).json()["categories"]
+    assert "Office expenses" in cats and "Advertising" in cats
+
+    client.post("/api/transactions/import", headers=auth,
+                files={"file": ("a.qfx", _qfx(_stmttrn("C1", "-9.00", "STAPLES")), "x")},
+                data={"account_id": str(account_id)})
+    txn_id = client.get("/api/transactions", headers=auth).json()[0]["id"]
+
+    # A configured category is accepted; an unknown one is rejected.
+    ok = client.post(f"/api/transactions/{txn_id}/tag", headers=auth,
+                     json={"txn_type": "business", "schedule_c_category": "Office expenses"})
+    assert ok.status_code == 200
+    bad = client.post(f"/api/transactions/{txn_id}/tag", headers=auth,
+                      json={"txn_type": "business", "schedule_c_category": "Yacht maintenance"})
+    assert bad.status_code == 400
+
+
 def test_tagging_is_remembered_and_applied_on_next_import(client):
     auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
     account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]
