@@ -9,7 +9,7 @@
 # (see packaging/README.md).
 cask "opledger" do
   version "0.2.0"
-  sha256 "REPLACE_WITH_MACOS_ZIP_SHA256"
+  sha256 "520399dd76ca1a5f55fbc25af0cd373aa440b245c2252d717d2930a4bf914d19"
 
   url "https://github.com/opieeipo/OPLedger/releases/download/v#{version}/OPLedger-v#{version}-macOS-arm64.zip"
   name "OPLedger"

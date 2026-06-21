@@ -7,7 +7,7 @@
     "url": "https://github.com/opieeipo/OPLedger/blob/main/LICENSE"
   },
   "url": "https://github.com/opieeipo/OPLedger/releases/download/v0.2.0/OPLedger-v0.2.0-windows-x64.zip",
-  "hash": "REPLACE_WITH_WINDOWS_ZIP_SHA256",
+  "hash": "d16727b27993551c61ad21e0cd71c586bb5b9d32c19e8491ac11f933b8a76db2",
   "bin": "opledger.exe",
   "shortcuts": [["opledger.exe", "OPLedger"]],
   "notes": [
