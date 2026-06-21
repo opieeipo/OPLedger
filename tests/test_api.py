@@ -192,6 +192,24 @@ def test_reports_pnl_schedule_c_and_yoy(client):
     assert by_year == {2025: 0, 2026: 750}
 
 
+def test_multi_account_ledger_filter(client):
+    auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
+    checking = client.get("/api/accounts", headers=auth).json()[0]["id"]
+    card = client.post("/api/accounts", headers=auth, json={"nickname": "Card"}).json()["id"]
+
+    client.post("/api/transactions/import", headers=auth,
+                files={"file": ("a.qfx", _qfx(_stmttrn("M1", "-5.00", "A")), "x")},
+                data={"account_id": str(checking)})
+    client.post("/api/transactions/import", headers=auth,
+                files={"file": ("b.qfx", _qfx(_stmttrn("M2", "-9.00", "B")), "x")},
+                data={"account_id": str(card)})
+
+    # Combined ledger shows both; filtering narrows to one account.
+    assert len(client.get("/api/transactions", headers=auth).json()) == 2
+    only_card = client.get("/api/transactions", headers=auth, params={"account_id": card}).json()
+    assert [t["fitid"] for t in only_card] == ["M2"]
+
+
 def test_exports_csv_txf_pdf(client):
     auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
     account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]

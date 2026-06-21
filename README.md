@@ -259,7 +259,7 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 - [x] TXF export
 - [x] CSV and PDF export
 - [x] Auto-categorization by payee pattern
-- [ ] Multi-account ledger view
+- [x] Multi-account ledger view
 - [ ] Brew, Scoop, and Linux installer distribution
 - [ ] Recurring transaction detection
 - [x] Year-over-year comparison report

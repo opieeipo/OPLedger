@@ -184,7 +184,7 @@ async function renderDashboard(me) {
   sections.push(renderAccounts(accounts, canWrite));
   if (canWrite) sections.push(renderImport(accounts));
   sections.push(await renderReports());
-  sections.push(renderTransactions(transactions, canWrite));
+  sections.push(renderTransactions(transactions, canWrite, accounts));
   if (isOwner) sections.push(await renderUsers());
 
   mount(el("div", { class: "dashboard" }, ...sections));
@@ -293,30 +293,50 @@ async function renderReports() {
   return section;
 }
 
-function renderTransactions(transactions, canWrite) {
+function renderTransactions(transactions, canWrite, accounts = []) {
   const section = el("section", { class: "card" }, el("h3", {}, t("transactions.heading")));
   if (!transactions.length) {
     section.append(el("p", { class: "muted" }, t("transactions.none")));
     return section;
   }
-  const rows = transactions.map((txn) => {
+  const acctName = new Map(accounts.map((a) => [a.id, a.nickname]));
+
+  // Account filter for the multi-account ledger view (client-side).
+  const filter = el("select", {},
+    el("option", { value: "" }, t("transactions.allAccounts")),
+    ...accounts.map((a) => el("option", { value: a.id }, a.nickname)));
+  const tbody = el("tbody", {});
+
+  function row(txn) {
     const typeCell = canWrite ? typeSelect(txn) : el("span", {}, txn.txn_type || t("transactions.untagged"));
     const catCell = canWrite ? categorySelect(txn) : el("span", {}, txn.schedule_c_category || "—");
     return el("tr", {},
       el("td", {}, txn.posted),
+      el("td", {}, acctName.get(txn.account_id) || "—"),
       el("td", {}, txn.payee || "—"),
       el("td", { class: "num" }, Number(txn.amount).toFixed(2)),
       el("td", {}, typeCell),
       el("td", {}, catCell),
     );
-  });
-  const table = el("table", { class: "txns" },
+  }
+  function repaint() {
+    const sel = filter.value ? Number(filter.value) : null;
+    const shown = sel ? transactions.filter((t) => t.account_id === sel) : transactions;
+    tbody.replaceChildren(...shown.map(row));
+  }
+  filter.addEventListener("change", repaint);
+
+  if (accounts.length > 1) {
+    section.append(el("label", { class: "field" }, t("transactions.account"), filter));
+  }
+  section.append(el("table", { class: "txns" },
     el("thead", {}, el("tr", {},
-      el("th", {}, t("transactions.date")), el("th", {}, t("transactions.payee")),
+      el("th", {}, t("transactions.date")), el("th", {}, t("transactions.account")),
+      el("th", {}, t("transactions.payee")),
       el("th", { class: "num" }, t("transactions.amount")), el("th", {}, t("transactions.type")),
       el("th", {}, t("transactions.category")))),
-    el("tbody", {}, ...rows));
-  section.append(table);
+    tbody));
+  repaint();
   return section;
 }
 

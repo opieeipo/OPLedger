@@ -68,6 +68,8 @@
     "amount": "Amount",
     "type": "Type",
     "category": "Schedule C category",
+    "account": "Account",
+    "allAccounts": "All accounts",
     "personal": "Personal",
     "business": "Business",
     "untagged": "Untagged",
