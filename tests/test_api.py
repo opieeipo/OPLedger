@@ -210,6 +210,31 @@ def test_multi_account_ledger_filter(client):
     assert [t["fitid"] for t in only_card] == ["M2"]
 
 
+def test_external_database_mode_skips_passphrase(tmp_path, monkeypatch):
+    # A non-SQLCipher database_url selects external mode (same code path as
+    # PostgreSQL): connect at startup, no passphrase, no unlock screen.
+    monkeypatch.setenv("OPLEDGER_DATABASE_URL", f"sqlite:///{tmp_path/'ext.db'}")
+    settings.data_dir = tmp_path
+    settings.passphrase = None
+    database.dispose()
+    runtime.lock()
+    with TestClient(app) as c:
+        assert c.get("/api/setup/status").json() == {"initialized": False, "unlocked": True}
+
+        r = c.post("/api/setup", json={
+            "owner_username": "owner", "owner_password": "supersecret",
+            "ledger_name": "Acme",  # note: no passphrase
+        })
+        assert r.status_code == 201
+        auth = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        assert c.get("/api/me", headers=auth).json()["role"] == "owner"
+
+        assert c.post("/api/unlock", json={"passphrase": "x"}).status_code == 400
+        assert c.get("/api/setup/status").json()["initialized"] is True
+    database.dispose()
+    runtime.lock()
+
+
 def test_recurring_detection(client):
     auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
     account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]

@@ -263,7 +263,7 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 - [ ] Brew, Scoop, and Linux installer distribution
 - [x] Recurring transaction detection
 - [x] Year-over-year comparison report
-- [ ] PostgreSQL backend support
+- [x] PostgreSQL backend support
 - [ ] HTTPS / reverse proxy documentation
 
 ---

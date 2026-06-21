@@ -26,7 +26,9 @@ class FirstAccount(BaseModel):
 class SetupRequest(BaseModel):
     owner_username: str = Field(min_length=1)
     owner_password: str = Field(min_length=8)
-    passphrase: str = Field(min_length=8)
+    # Required for the local SQLCipher store; ignored for external databases
+    # (PostgreSQL), which need no passphrase. Validated in the setup handler.
+    passphrase: Optional[str] = None
     ledger_name: str = Field(min_length=1)
     first_account: Optional[FirstAccount] = None
 

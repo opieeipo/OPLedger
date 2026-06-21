@@ -23,21 +23,31 @@ FRONTEND_DIR = ROOT / "frontend"
 ASSETS_DIR = ROOT / "assets"
 
 
+def _load_jwt_secret() -> None:
+    from backend.app.models.models import Setting
+
+    db = database.new_session()
+    try:
+        secret = db.get(Setting, "jwt_secret")
+        runtime.jwt_secret = secret.value if secret else None
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """Ensure the data dir/config exist and optionally auto-unlock at boot."""
+    """Ensure the data dir/config exist and connect/unlock the DB at boot."""
     settings.ensure_data_dir()
-    if settings.passphrase and database.database_exists():
+    if database.is_external():
+        # External database (e.g. PostgreSQL): connect immediately; no unlock.
+        database.open_external()
+        runtime.unlocked = True
+        _load_jwt_secret()
+        logger.info("Connected to external database")
+    elif settings.passphrase and database.database_exists():
         # Convenience path for unattended restarts (OPLEDGER_PASSPHRASE set).
         if database.open_database(settings.passphrase, create=False):
-            db = database.new_session()
-            try:
-                from backend.app.models.models import Setting
-
-                secret = db.get(Setting, "jwt_secret")
-                runtime.jwt_secret = secret.value if secret else None
-            finally:
-                db.close()
+            _load_jwt_secret()
             runtime.unlocked = True
             logger.info("Database auto-unlocked from OPLEDGER_PASSPHRASE")
         else:

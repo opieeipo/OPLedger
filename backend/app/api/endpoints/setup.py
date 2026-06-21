@@ -26,6 +26,13 @@ def _load_jwt_secret(db) -> None:
 
 @router.get("/setup/status", response_model=SetupStatus)
 def setup_status() -> SetupStatus:
+    if database.is_external():
+        # External DB is connected at startup; "initialized" means an owner
+        # already exists in it.
+        return SetupStatus(
+            initialized=runtime.unlocked and database.has_users(),
+            unlocked=runtime.unlocked,
+        )
     return SetupStatus(
         initialized=database.database_exists(),
         unlocked=runtime.unlocked,
@@ -34,15 +41,26 @@ def setup_status() -> SetupStatus:
 
 @router.post("/setup", response_model=Token, status_code=status.HTTP_201_CREATED)
 def first_run_setup(body: SetupRequest) -> Token:
-    """Create the encrypted database, the Owner account, and the ledger."""
-    if database.database_exists():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Already initialized; use /unlock",
-        )
-
-    # Creates the SQLCipher database keyed with the passphrase and builds schema.
-    database.open_database(body.passphrase, create=True)
+    """Create the database (if needed), the Owner account, and the ledger."""
+    if database.is_external():
+        # The external DB is already connected; just ensure it's not set up yet.
+        if database.has_users():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Already initialized"
+            )
+    else:
+        if database.database_exists():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Already initialized; use /unlock",
+            )
+        if not body.passphrase or len(body.passphrase) < 8:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="A passphrase of at least 8 characters is required",
+            )
+        # Creates the SQLCipher database keyed with the passphrase + schema.
+        database.open_database(body.passphrase, create=True)
 
     db = database.new_session()
     try:
@@ -83,6 +101,11 @@ def first_run_setup(body: SetupRequest) -> Token:
 @router.post("/unlock", status_code=status.HTTP_204_NO_CONTENT)
 def unlock(body: UnlockRequest) -> None:
     """Unlock an existing encrypted database with the passphrase."""
+    if database.is_external():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="External database needs no unlock",
+        )
     if not database.database_exists():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
