@@ -56,36 +56,46 @@ No aggregator tokens. No OAuth flows. No recurring sync connection to break at t
 
 OPLedger runs as a Podman container. Podman is a daemonless, rootless, Docker-compatible container runtime with no licensing restrictions. The installer handles it automatically.
 
+OPLedger runs as a Podman container and opens in a chromeless **Google Chrome**
+window, so both Podman and Chrome are required. The installers declare/check
+Podman; install Chrome from <https://www.google.com/chrome/>.
+
 ### macOS
 
 ```bash
-brew tap opledger/opledger
+brew tap opieeipo/opledger
 brew install opledger
+brew install --cask google-chrome   # if you don't already have Chrome
+opledger
 ```
 
-This installs Podman if not already present, pulls the OPLedger container image, and adds OPLedger to your Applications folder. Double-click to launch.
+Installs the launcher (and Podman as a dependency). The first `opledger` run
+pulls the container image and opens the app window; close the window to quit.
 
 ### Windows
 
 ```powershell
-scoop bucket add opledger https://github.com/opledger/scoop-bucket
+scoop bucket add opledger https://github.com/opieeipo/scoop-opledger
 scoop install opledger
+opledger
 ```
 
-This installs Podman, pulls the container image, and adds OPLedger to your Start Menu. Click to launch.
+Installs the launcher and Podman. Run `opledger` (or pin it to Start) to launch;
+Google Chrome is required.
 
 ### Linux
 
 ```bash
-curl -fsSL https://get.opledger.app/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/opieeipo/OPLedger/main/packaging/linux/install.sh | bash
 ```
 
-Installs Podman, pulls the image, and registers a `.desktop` launcher in your application grid.
+Installs the `opledger` launcher and registers a `.desktop` entry. Ensure Podman
+and Chrome (or Chromium) are installed.
 
 ### Manual (any platform with Podman installed)
 
 ```bash
-podman-compose -f https://raw.githubusercontent.com/opledger/opledger/main/compose.yaml up -d
+podman-compose -f https://raw.githubusercontent.com/opieeipo/OPLedger/main/compose.yaml up -d
 ```
 
 Then open `http://localhost:8080` in your browser.

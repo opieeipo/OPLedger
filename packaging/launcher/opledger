@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+#
+# OPLedger desktop launcher (installed via Homebrew or the Linux installer).
+#
+# Runs the OPLedger container with Podman and opens it in a chromeless Google
+# Chrome window — no address bar, no tabs, its own Dock/taskbar entry. Closing
+# the window stops the container, so it behaves like a native desktop app.
+#
+# Requires: Podman and Google Chrome (Chromium accepted as a fallback).
+#
+set -euo pipefail
+
+IMAGE="${OPLEDGER_IMAGE:-ghcr.io/opieeipo/opledger:latest}"
+PORT="${OPLEDGER_PORT:-8080}"
+URL="http://127.0.0.1:${PORT}"
+NAME="opledger"
+PROFILE_DIR="${OPLEDGER_PROFILE_DIR:-$HOME/.opledger/chrome-profile}"
+DEVTOOLS_PORT="${OPLEDGER_DEVTOOLS_PORT:-$((PORT + 1000))}"
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  cat <<EOF
+OPLedger — self-hosted, private bookkeeping.
+
+Usage: opledger
+
+Runs the OPLedger container (Podman) and opens it in a Google Chrome app window.
+Close the window to stop it. Environment overrides:
+  OPLEDGER_PORT          host port (default 8080)
+  OPLEDGER_IMAGE         container image (default $IMAGE)
+  OPLEDGER_PROFILE_DIR   Chrome profile dir (default ~/.opledger/chrome-profile)
+EOF
+  exit 0
+fi
+
+# --- dependencies --------------------------------------------------------
+if ! command -v podman >/dev/null 2>&1; then
+  echo "OPLedger requires Podman, which was not found." >&2
+  echo "Install it (e.g. 'brew install podman' or your package manager) and retry." >&2
+  exit 1
+fi
+
+find_chrome() {
+  local c
+  for c in \
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+    "/Applications/Chromium.app/Contents/MacOS/Chromium" \
+    google-chrome google-chrome-stable chromium chromium-browser
+  do
+    if [[ -x "$c" ]]; then printf '%s\n' "$c"; return 0; fi
+    if command -v "$c" >/dev/null 2>&1; then command -v "$c"; return 0; fi
+  done
+  return 1
+}
+
+if ! CHROME="$(find_chrome)"; then
+  echo "OPLedger requires Google Chrome, which was not found." >&2
+  echo "Install it from https://www.google.com/chrome/ and run this again." >&2
+  exit 1
+fi
+
+# Single-instance guard: a running Chrome on this profile would make the new
+# launch hand off and return immediately, tearing the container down too soon.
+if pgrep -f -- "--user-data-dir=$PROFILE_DIR" >/dev/null 2>&1; then
+  echo "OPLedger already appears to be open. Close that window first." >&2
+  exit 1
+fi
+
+# --- start the container -------------------------------------------------
+echo "Starting OPLedger on ${URL} ..."
+podman run -d --replace --name "$NAME" \
+  -p "${PORT}:8080" \
+  -v opledger-data:/data \
+  "$IMAGE" >/dev/null
+
+stop_container() { podman stop "$NAME" >/dev/null 2>&1 || true; podman rm "$NAME" >/dev/null 2>&1 || true; }
+trap stop_container EXIT INT TERM
+
+# --- wait for it to answer ----------------------------------------------
+for _ in $(seq 1 60); do
+  curl -fsS "${URL}/api/setup/status" >/dev/null 2>&1 && break
+  sleep 0.5
+done
+
+# --- open the app window, tie its lifetime to the container --------------
+# Chrome can linger after its window closes (esp. on macOS), so we watch the
+# window's DevTools page target rather than the process: it vanishes the moment
+# the window closes, and that's our teardown signal.
+mkdir -p "$PROFILE_DIR"
+echo "OPLedger is open. Close the window to quit."
+"$CHROME" \
+  --app="$URL" \
+  --user-data-dir="$PROFILE_DIR" \
+  --remote-debugging-port="$DEVTOOLS_PORT" \
+  --class="OPLedger" \
+  --no-first-run \
+  --no-default-browser-check \
+  --window-size=1200,860 \
+  >/dev/null 2>&1 &
+CHROME_PID=$!
+
+window_open() {
+  curl -fsS "http://127.0.0.1:${DEVTOOLS_PORT}/json" 2>/dev/null | grep -q "127.0.0.1:${PORT}"
+}
+
+appeared=0
+for _ in $(seq 1 30); do if window_open; then appeared=1; break; fi; sleep 0.5; done
+if [[ "$appeared" == "1" ]]; then
+  while window_open; do sleep 1; done
+else
+  wait "$CHROME_PID" 2>/dev/null || true
+fi
+
+kill "$CHROME_PID" 2>/dev/null || true
+pkill -f -- "--user-data-dir=$PROFILE_DIR" 2>/dev/null || true
+# Window closed → the EXIT trap stops the container.

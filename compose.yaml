@@ -5,7 +5,7 @@
 #   open http://localhost:8080
 services:
   opledger:
-    image: ghcr.io/opledger/opledger:latest
+    image: ghcr.io/opieeipo/opledger:latest
     # For local development, build from source instead of pulling the image:
     # build:
     #   context: .
