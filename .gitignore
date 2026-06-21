@@ -39,6 +39,8 @@ yarn-error.log*
 
 # --- OPLedger data (encrypted DB + runtime config volume) ---
 data/
+.localdata/
+.evaldata/
 *.db
 *.sqlite
 *.sqlite3

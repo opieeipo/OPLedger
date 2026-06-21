@@ -1,0 +1,51 @@
+# Year-specific tax constants used by the "SE + income tax" quarterly-estimate
+# method. These are ESTIMATES — update them each tax year. Copied into your data
+# volume's config/ on first run. Delete a key to fall back to the built-in
+# default. Brackets are [upper_bound, rate]; the final bound is null (∞).
+ss_wage_base: 168600
+
+standard_deduction:
+  single: 14600
+  married_joint: 29200
+  married_separate: 14600
+  head_of_household: 21900
+
+addl_medicare_threshold:
+  single: 200000
+  married_joint: 250000
+  married_separate: 125000
+  head_of_household: 200000
+
+brackets:
+  single:
+    - [11600, 0.10]
+    - [47150, 0.12]
+    - [100525, 0.22]
+    - [191950, 0.24]
+    - [243725, 0.32]
+    - [609350, 0.35]
+    - [null, 0.37]
+  married_joint:
+    - [23200, 0.10]
+    - [94300, 0.12]
+    - [201050, 0.22]
+    - [383900, 0.24]
+    - [487450, 0.32]
+    - [731200, 0.35]
+    - [null, 0.37]
+  married_separate:
+    - [11600, 0.10]
+    - [47150, 0.12]
+    - [100525, 0.22]
+    - [191950, 0.24]
+    - [243725, 0.32]
+    - [365600, 0.35]
+    - [null, 0.37]
+  head_of_household:
+    - [16550, 0.10]
+    - [63100, 0.12]
+    - [100500, 0.22]
+    - [191950, 0.24]
+    - [243700, 0.32]
+    - [609350, 0.35]
+    - [null, 0.37]

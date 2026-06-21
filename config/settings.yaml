@@ -12,8 +12,11 @@ locale: en
 # First month of your fiscal year (1 = January).
 fiscal_year_start: 1
 
-# SQLAlchemy connection string. Default is the encrypted local SQLCipher DB.
-# To run against PostgreSQL instead, point this at your instance — no
-# application code changes required:
+# SQLAlchemy connection string. Default is the encrypted local SQLCipher DB,
+# which uses the passphrase/unlock flow. To run against PostgreSQL instead,
+# point this at your instance (no application code changes required) — the app
+# then connects at startup with no passphrase, and encryption at rest becomes
+# your database's responsibility. The OPLEDGER_DATABASE_URL env var overrides
+# this value.
 #   database_url: "postgresql+psycopg://user:pass@host:5432/opledger"
 database_url: "sqlite+pysqlcipher://:@/data/opledger.db"

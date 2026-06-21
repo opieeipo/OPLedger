@@ -6,9 +6,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.app.api.deps import get_current_user, get_db, require_role
-from backend.app.models.models import Account, Role, Transaction
-from backend.app.schemas import ImportResult, TagRequest, TransactionOut
-from backend.app.services import qfx
+from backend.app.models.models import Account, Role, Transaction, TxnType
+from backend.app.schemas import (
+    ImportResult,
+    RecurringSeries,
+    TagRequest,
+    TransactionOut,
+)
+from backend.app.services import categories as categories_service
+from backend.app.services import categorize, qfx, recurring
 
 router = APIRouter(tags=["transactions"])
 
@@ -44,7 +50,7 @@ def import_qfx(
     )
     new_txns, duplicates = qfx.deduplicate(parsed, existing)
 
-    db.add_all(
+    rows = [
         Transaction(
             account_id=account_id,
             fitid=t.fitid,
@@ -54,11 +60,17 @@ def import_qfx(
             memo=t.memo,
         )
         for t in new_txns
-    )
+    ]
+    # Auto-tag from learned payee rules before persisting.
+    auto_tagged = categorize.apply_rules(db, rows)
+    db.add_all(rows)
     db.commit()
 
     return ImportResult(
-        parsed=len(parsed), imported=len(new_txns), duplicates=duplicates
+        parsed=len(parsed),
+        imported=len(rows),
+        duplicates=duplicates,
+        auto_tagged=auto_tagged,
     )
 
 
@@ -74,6 +86,19 @@ def list_transactions(
     return list(db.scalars(stmt))
 
 
+@router.get("/transactions/recurring", response_model=list[RecurringSeries])
+def recurring_series(
+    account_id: int | None = None,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+) -> list[dict]:
+    """Detect recurring transactions (subscriptions, regular bills)."""
+    stmt = select(Transaction)
+    if account_id is not None:
+        stmt = stmt.where(Transaction.account_id == account_id)
+    return recurring.detect(db.scalars(stmt).all())
+
+
 @router.post("/transactions/{txn_id}/tag", response_model=TransactionOut)
 def tag_transaction(
     txn_id: int,
@@ -84,8 +109,28 @@ def tag_transaction(
     txn = db.get(Transaction, txn_id)
     if txn is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
     txn.txn_type = body.txn_type
-    txn.schedule_c_category = body.schedule_c_category
+    if body.txn_type == TxnType.business:
+        if body.schedule_c_category and not categories_service.is_valid(body.schedule_c_category):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unknown Schedule C category",
+            )
+        txn.schedule_c_category = body.schedule_c_category
+        txn.personal_category = None
+        # Remember the choice so future imports from this payee tag themselves.
+        categorize.remember(db, txn.payee, body.txn_type, body.schedule_c_category)
+    else:  # personal
+        if body.personal_category and not categories_service.is_valid_personal(body.personal_category):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unknown personal category",
+            )
+        txn.personal_category = body.personal_category
+        txn.schedule_c_category = None
+        categorize.remember(db, txn.payee, body.txn_type, None)
+
     db.commit()
     db.refresh(txn)
     return txn

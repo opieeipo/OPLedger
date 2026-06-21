@@ -8,6 +8,7 @@ import os
 import shutil
 from pathlib import Path
 
+import yaml
 from pydantic_settings import BaseSettings
 
 # Bundled default config templates, copied into the data volume on first run.
@@ -31,6 +32,26 @@ class Settings(BaseSettings):
     @property
     def db_path(self) -> Path:
         return self.data_dir / "opledger.db"
+
+    @property
+    def database_url(self) -> str | None:
+        """Resolve the SQLAlchemy URL: env override, else config/settings.yaml.
+
+        The default (sqlite+pysqlcipher) selects the local encrypted SQLCipher
+        store. Point this at PostgreSQL to run against an external database
+        instead — no application code changes required.
+        """
+        env = os.environ.get("OPLEDGER_DATABASE_URL")
+        if env:
+            return env
+        path = self.config_dir / "settings.yaml"
+        if path.exists():
+            try:
+                data = yaml.safe_load(path.read_text()) or {}
+            except yaml.YAMLError:
+                return None
+            return data.get("database_url")
+        return None
 
     def ensure_data_dir(self) -> None:
         """Create the data dir and seed config/ from bundled templates."""

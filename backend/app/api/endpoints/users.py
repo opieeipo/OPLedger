@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from backend.app.api.deps import get_db, require_role
 from backend.app.core.security import hash_password
 from backend.app.models.models import Role, User
-from backend.app.schemas import UserCreate, UserOut
+from backend.app.schemas import UserCreate, UserOut, UserUpdate
 
 router = APIRouter(tags=["users"], dependencies=[Depends(require_role(Role.owner))])
 
@@ -30,6 +30,34 @@ def create_user(body: UserCreate, db: Session = Depends(get_db)) -> User:
         role=body.role,
     )
     db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.patch("/users/{user_id}", response_model=UserOut)
+def update_user(
+    user_id: int,
+    body: UserUpdate,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_role(Role.owner)),
+) -> User:
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    data = body.model_dump(exclude_unset=True)
+    # Don't let the last Owner be demoted (would lock everyone out of admin).
+    if "role" in data and user.role == Role.owner and data["role"] != Role.owner:
+        owners = db.scalars(select(User).where(User.role == Role.owner)).all()
+        if len(owners) <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot demote the last Owner",
+            )
+    if "role" in data:
+        user.role = data["role"]
+    if data.get("password"):
+        user.password_hash = hash_password(data["password"])
     db.commit()
     db.refresh(user)
     return user

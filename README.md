@@ -239,7 +239,7 @@ No Electron. No Tauri. No native framework. The app is a container and a shortcu
 OPLedger is designed to extend cleanly to a hosted deployment:
 
 - Swap SQLite for PostgreSQL via the SQLAlchemy connection string in `settings.yaml` -- no application code changes required
-- Place Caddy or Nginx in front for TLS
+- Place Caddy or Nginx in front for TLS -- see [docs/reverse-proxy.md](./docs/reverse-proxy.md) for ready-to-use Caddy and Nginx configs
 - The existing user/role model and JWT auth work identically in a multi-tenant hosted context
 - The REST API requires no modification to serve remote clients
 
@@ -253,18 +253,18 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 - [x] First-run setup wizard
 - [x] Multi-user auth with role-based access
 - [x] AES-256 encryption at rest
-- [ ] Business/personal tagging with memory
-- [ ] Schedule C category mapping
-- [ ] P&L report
-- [ ] TXF export
-- [ ] CSV and PDF export
-- [ ] Auto-categorization by payee pattern
-- [ ] Multi-account ledger view
+- [x] Business/personal tagging with memory
+- [x] Schedule C category mapping
+- [x] P&L report
+- [x] TXF export
+- [x] CSV and PDF export
+- [x] Auto-categorization by payee pattern
+- [x] Multi-account ledger view
 - [ ] Brew, Scoop, and Linux installer distribution
-- [ ] Recurring transaction detection
-- [ ] Year-over-year comparison report
-- [ ] PostgreSQL backend support
-- [ ] HTTPS / reverse proxy documentation
+- [x] Recurring transaction detection
+- [x] Year-over-year comparison report
+- [x] PostgreSQL backend support
+- [x] HTTPS / reverse proxy documentation
 
 ---
 
