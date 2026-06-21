@@ -14,7 +14,7 @@ class Opledger < Formula
   desc "Self-hosted, private bookkeeping: QFX in, Schedule C out"
   homepage "https://github.com/opieeipo/OPLedger"
   url "https://github.com/opieeipo/OPLedger/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "REPLACE_WITH_SOURCE_TARBALL_SHA256"
+  sha256 "11e955ebcd7ec571397ff4b848d3bfee44ae1dd092adb0e066935f02f71514c5"
   license :cant_represent # Apache-2.0 with the Commons Clause condition (see LICENSE)
   version "0.1.0"
 

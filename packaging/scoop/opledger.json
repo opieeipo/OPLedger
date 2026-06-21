@@ -7,7 +7,7 @@
     "url": "https://github.com/opieeipo/OPLedger/blob/main/LICENSE"
   },
   "url": "https://github.com/opieeipo/OPLedger/archive/refs/tags/v0.1.0.zip",
-  "hash": "REPLACE_WITH_SOURCE_ZIP_SHA256",
+  "hash": "efc10f8c947ad612cbec2bf4dd0831b7e4a935d290dc51969515d96f984f71af",
   "extract_dir": "OPLedger-0.1.0",
   "depends": "main/podman",
   "bin": [["packaging\\launcher\\opledger.ps1", "opledger"]],
