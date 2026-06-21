@@ -75,7 +75,7 @@ pulls the container image and opens the app window; close the window to quit.
 
 ```powershell
 # one command — installs straight from the manifest:
-scoop install https://raw.githubusercontent.com/opieeipo/scoop-opledger/main/opledger.json
+scoop install https://raw.githubusercontent.com/opieeipo/scoop-opledger/main/bucket/opledger.json
 opledger
 ```
 

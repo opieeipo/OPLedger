@@ -51,8 +51,8 @@ brew install --cask google-chrome
 opledger
 ```
 
-**Scoop** — create repo `opieeipo/scoop-opledger`, put `opledger.json` at its
-root (or in `bucket/`). Install:
+**Scoop** — create repo `opieeipo/scoop-opledger`, put the manifest at
+`bucket/opledger.json` (matching the `scoop-stash` layout). Install:
 ```powershell
 scoop bucket add opledger https://github.com/opieeipo/scoop-opledger
 scoop install opledger
