@@ -256,8 +256,8 @@ If you build a hosted service on top of OPLedger, the license requires attributi
 - [x] Business/personal tagging with memory
 - [x] Schedule C category mapping
 - [x] P&L report
-- [ ] TXF export
-- [ ] CSV and PDF export
+- [x] TXF export
+- [x] CSV and PDF export
 - [x] Auto-categorization by payee pattern
 - [ ] Multi-account ledger view
 - [ ] Brew, Scoop, and Linux installer distribution

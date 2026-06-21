@@ -249,11 +249,31 @@ function renderImport(accounts) {
   return section;
 }
 
+async function downloadExport(path, filename) {
+  const tok = token.get();
+  const res = await fetch(`${API}${path}`, { headers: tok ? { Authorization: `Bearer ${tok}` } : {} });
+  if (!res.ok) return;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = el("a", { href: url, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 async function renderReports() {
   const year = new Date().getFullYear();
   const r = await api(`/reports/schedule-c?year=${year}`).catch(() => null);
   const section = el("section", { class: "card" },
     el("h3", {}, `${t("reports.heading")} — ${year}`));
+
+  const exports = el("div", { class: "inline" },
+    el("button", { class: "ghost", onclick: () => downloadExport("/export/csv", "opledger.csv") }, t("reports.exportCsv")),
+    el("button", { class: "ghost", onclick: () => downloadExport(`/export/txf?year=${year}`, `opledger-${year}.txf`) }, t("reports.exportTxf")),
+    el("button", { class: "ghost", onclick: () => downloadExport(`/export/pdf?year=${year}`, `opledger-schedule-c-${year}.pdf`) }, t("reports.exportPdf")));
+  section.append(exports);
+
   if (!r || (!Number(r.gross_receipts) && !Number(r.total_expenses))) {
     section.append(el("p", { class: "muted" }, t("reports.none")));
     return section;

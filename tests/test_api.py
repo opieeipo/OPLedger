@@ -192,6 +192,38 @@ def test_reports_pnl_schedule_c_and_yoy(client):
     assert by_year == {2025: 0, 2026: 750}
 
 
+def test_exports_csv_txf_pdf(client):
+    auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
+    account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]
+    qfx = _qfx(
+        _stmttrn("X1", "1000.00", "CLIENT", "20260301"),
+        _stmttrn("X2", "-200.00", "OFFICE DEPOT", "20260305"),
+    )
+    client.post("/api/transactions/import", headers=auth,
+                files={"file": ("x.qfx", qfx, "x")}, data={"account_id": str(account_id)})
+    txns = {t["fitid"]: t for t in client.get("/api/transactions", headers=auth).json()}
+    client.post(f"/api/transactions/{txns['X1']['id']}/tag", headers=auth,
+                json={"txn_type": "business"})
+    client.post(f"/api/transactions/{txns['X2']['id']}/tag", headers=auth,
+                json={"txn_type": "business", "schedule_c_category": "Office expenses"})
+
+    csv_res = client.get("/api/export/csv", headers=auth)
+    assert csv_res.status_code == 200
+    assert csv_res.headers["content-type"].startswith("text/csv")
+    body = csv_res.text
+    assert "date,account,payee" in body and "OFFICE DEPOT" in body and "Checking" in body
+
+    txf = client.get("/api/export/txf", headers=auth, params={"year": 2026})
+    assert txf.status_code == 200
+    assert "V042" in txf.text and "$200.00" in txf.text and "N301" in txf.text  # Office expenses
+    assert "N287" in txf.text  # gross receipts
+
+    pdf = client.get("/api/export/pdf", headers=auth, params={"year": 2026})
+    assert pdf.status_code == 200
+    assert pdf.headers["content-type"] == "application/pdf"
+    assert pdf.content[:5] == b"%PDF-"
+
+
 def test_tagging_is_remembered_and_applied_on_next_import(client):
     auth = {"Authorization": f"Bearer {_setup(client).json()['access_token']}"}
     account_id = client.get("/api/accounts", headers=auth).json()[0]["id"]

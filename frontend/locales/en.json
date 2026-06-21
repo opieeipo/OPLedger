@@ -80,7 +80,10 @@
     "netProfit": "Net profit",
     "category": "Category",
     "amount": "Amount",
-    "none": "No business transactions tagged yet."
+    "none": "No business transactions tagged yet.",
+    "exportCsv": "Export CSV",
+    "exportTxf": "Export TXF",
+    "exportPdf": "Export PDF"
   },
   "users": {
     "heading": "Users",
