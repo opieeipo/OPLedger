@@ -1,19 +1,18 @@
 """OPLedger desktop entry point (native build).
 
-Runs the FastAPI app with an embedded uvicorn server and opens it in a chromeless
-Google Chrome window — no browser chrome, its own Dock/taskbar entry. Closing the
-window stops the server and quits. This is what PyInstaller bundles into the
-native app; there is no container and no Podman dependency.
+Runs the FastAPI app with an embedded uvicorn server and shows it in the native
+OS webview (WKWebView on macOS, WebView2 on Windows, WebKitGTK on Linux) via
+pywebview — no browser dependency, no container, no Podman. Closing the window
+stops the server and quits. This is what PyInstaller bundles into the native app.
 
-Google Chrome is required (Chromium accepted as a fallback).
+The same backend powers the self-hosted web service; this file is just the
+desktop shell around it.
 """
 from __future__ import annotations
 
 import os
 import platform
-import shutil
 import socket
-import subprocess
 import sys
 import threading
 import time
@@ -40,29 +39,6 @@ def _free_port() -> int:
         return s.getsockname()[1]
 
 
-def _find_chrome() -> str | None:
-    candidates = []
-    system = platform.system()
-    if system == "Darwin":
-        candidates += [
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            "/Applications/Chromium.app/Contents/MacOS/Chromium",
-        ]
-    elif system == "Windows":
-        for env in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"):
-            root = os.environ.get(env)
-            if root:
-                candidates.append(str(Path(root) / "Google/Chrome/Application/chrome.exe"))
-    for name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome"):
-        found = shutil.which(name)
-        if found:
-            candidates.append(found)
-    for c in candidates:
-        if c and Path(c).exists():
-            return c
-    return None
-
-
 def _wait_until(url: str, timeout: float = 30.0) -> bool:
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -74,81 +50,41 @@ def _wait_until(url: str, timeout: float = 30.0) -> bool:
     return False
 
 
-def _window_open(devtools_port: int, port: int) -> bool:
-    """True while the app's DevTools page target exists (window still open)."""
-    try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{devtools_port}/json", timeout=2) as r:
-            return f"127.0.0.1:{port}".encode() in r.read()
-    except Exception:
-        return False
-
-
 def main() -> int:
     os.environ.setdefault("OPLEDGER_DATA_DIR", str(_data_dir()))
 
     # Real import (not a string) so PyInstaller bundles the whole backend tree.
-    # Must follow the OPLEDGER_DATA_DIR setdefault above (config reads it at import).
+    # Must follow the OPLEDGER_DATA_DIR setdefault (config reads it at import).
     import uvicorn
     from backend.main import app
 
-    # Headless mode for smoke-testing the bundle (no Chrome): just run the server.
+    port = int(os.environ.get("OPLEDGER_PORT") or _free_port())
+    url = f"http://127.0.0.1:{port}"
+
+    # Headless mode for smoke-testing the bundle (no window): just run the server.
     if "--server-only" in sys.argv:
-        port = int(os.environ.get("OPLEDGER_PORT") or _free_port())
         sys.stdout.write(f"OPLEDGER_SERVER_PORT={port}\n")
         sys.stdout.flush()
         uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
         return 0
 
-    chrome = _find_chrome()
-    if not chrome:
-        sys.stderr.write(
-            "OPLedger requires Google Chrome, which was not found.\n"
-            "Install it from https://www.google.com/chrome/ and try again.\n"
-        )
-        return 1
-
-    port = int(os.environ.get("OPLEDGER_PORT") or _free_port())
-    url = f"http://127.0.0.1:{port}"
-    devtools_port = int(os.environ.get("OPLEDGER_DEVTOOLS_PORT") or _free_port())
-    profile_dir = os.environ.get("OPLEDGER_PROFILE_DIR") or str(Path.home() / ".opledger" / "chrome-profile")
-
-    # Embedded server on a background thread.
+    # Embedded server on a background thread; the webview owns the main thread.
     config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
     server = uvicorn.Server(config)
-    thread = threading.Thread(target=server.run, daemon=True)
-    thread.start()
+    threading.Thread(target=server.run, daemon=True).start()
 
     if not _wait_until(f"{url}/api/setup/status"):
         sys.stderr.write("OPLedger backend failed to start.\n")
         server.should_exit = True
         return 1
 
-    # Open the chromeless app window.
-    Path(profile_dir).mkdir(parents=True, exist_ok=True)
-    proc = subprocess.Popen(
-        [chrome, f"--app={url}", f"--user-data-dir={profile_dir}",
-         f"--remote-debugging-port={devtools_port}", "--class=OPLedger",
-         "--no-first-run", "--no-default-browser-check", "--window-size=1200,860"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
+    import webview
 
-    # Watch the window via DevTools (Chrome can outlive its window, esp. on macOS).
-    appeared = False
-    for _ in range(30):
-        if _window_open(devtools_port, port):
-            appeared = True
-            break
-        time.sleep(0.5)
-    if appeared:
-        while _window_open(devtools_port, port):
-            time.sleep(1)
-    else:
-        proc.wait()
+    webview.create_window("OPLedger", url, width=1200, height=860, min_size=(900, 640))
+    webview.start()  # blocks until the window is closed
 
-    # Window closed → tear down.
-    proc.terminate()
+    # Window closed → stop the server and quit.
     server.should_exit = True
-    thread.join(timeout=5)
     return 0
 
 

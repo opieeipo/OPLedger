@@ -1,0 +1,6 @@
+# Native desktop build dependencies (not needed by the container/server).
+# The server runs on backend/requirements.txt alone; these add the windowed
+# shell (pywebview → OS webview) and the bundler (PyInstaller).
+-r backend/requirements.txt
+pywebview
+pyinstaller
