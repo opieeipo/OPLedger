@@ -8,8 +8,8 @@
 # After a release tag builds the macOS asset, set `version` and `sha256`
 # (see packaging/README.md).
 cask "opledger" do
-  version "0.2.1"
-  sha256 "ab08ce51524a9be1c590f3a3ea7a7f302da9abd3f926a3843dcc2e2ee6ad5788"
+  version "0.2.2"
+  sha256 "d3f7a303d0dd375eeb00d7335adcf10152a19547a27ea268636f35c8424d4fe9"
 
   url "https://github.com/opieeipo/OPLedger/releases/download/v#{version}/OPLedger-v#{version}-macOS-arm64.zip"
   name "OPLedger"
