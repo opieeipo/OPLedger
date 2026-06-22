@@ -65,7 +65,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(
     title="OPLedger",
     description="Self-hosted bookkeeping: QFX in, Schedule C out.",
-    version="0.2.0",
+    version="0.2.1",
     lifespan=lifespan,
 )
 
