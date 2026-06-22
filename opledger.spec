@@ -47,7 +47,7 @@ if sys.platform == "darwin":
         info_plist={
             "CFBundleName": "OPLedger",
             "CFBundleDisplayName": "OPLedger",
-            "CFBundleShortVersionString": "0.2.1",
+            "CFBundleShortVersionString": "0.2.2",
             "NSHighResolutionCapable": True,
         },
     )

@@ -19,6 +19,18 @@ import time
 import urllib.request
 from pathlib import Path
 
+# Windowed PyInstaller build (console=False): Windows starts the process with no
+# console, so sys.stdout / sys.stderr are None. Several libraries (uvicorn's log
+# formatter among them) call sys.stdout.isatty() unconditionally, which raises
+# "AttributeError: 'NoneType' object has no attribute 'isatty'" and crashes the
+# app before the window opens. Give them real, inert streams when they're missing.
+# (When stdout is a real pipe, e.g. the --server-only smoke test, these are
+# already non-None and we leave them alone.)
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
+
 
 def _data_dir() -> Path:
     """Per-user data directory for the encrypted DB + config tree."""

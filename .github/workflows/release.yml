@@ -69,6 +69,15 @@ jobs:
       - name: Build (PyInstaller)
         run: pyinstaller --noconfirm opledger.spec
 
+      - name: Smoke test (Windows)
+        # Launches the GUI-subsystem exe the way a user does (no console, so
+        # sys.stdout is None) and probes the backend. Catches the issue #2
+        # "Unable to configure formatter 'default'" startup crash, which the
+        # build step alone cannot. Fail the release rather than ship a dud.
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/smoke-windows.ps1
+
       - name: macOS sign + notarize (skipped when secrets absent)
         if: runner.os == 'macOS'
         env:
